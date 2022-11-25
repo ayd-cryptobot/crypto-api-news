@@ -1,0 +1,4 @@
+private var host="localhost"
+private var user= "root",
+private var password= "root",
+private var database= "news"
