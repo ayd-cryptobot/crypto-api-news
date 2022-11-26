@@ -21,9 +21,11 @@ var result;
 var crypto_name;
 var user_id;
 
-async function createFollow(user_id, crypto_name) {
+async function createFollow(user_id, crypto_name,query_schedule) {
   let i = 0;
   while (i < crypto_name.length) {
+    var sql = "UPDATE user SET query_schedule ='"+query_schedule+"' WHERE user_id="+ user_id;
+    result = await con.query(sql)
     var sql = "INSERT INTO follow (user_id,crypto_name) VALUES ('" + user_id + "','" + crypto_name[i] + "');";
     result = await con.query(sql)
     console.log("1 follow inserted");
@@ -81,12 +83,12 @@ endpoints.post('/news/follow', async (req, res) => {
 
     crypto_name = id.following_cryptos;
     telegram_id = id.telegramID;
-
+    query_schedule = id.query_schedule;
     console.log("Connected!");
 
     user_id = await getUserByTelegram(telegram_id)
     await resetFollow(user_id);
-    await createFollow(user_id, crypto_name);
+    await createFollow(user_id, crypto_name,query_schedule);
     res.json({ "message": "follows inserted" });
     res.end
   }
