@@ -1,9 +1,12 @@
 const express = require('express')
+
 const endpoints = express.Router()
 const axios = require('axios')
 //database    
 const nodeCron = require("node-cron");
 var mysqlpro = require('mysql2/promise');
+const dotenv = require('dotenv')
+dotenv.config({path: '.env'})
 //database    
 //connection variable 
 var con
@@ -22,6 +25,7 @@ var result;
 var crypto_name;
 var user_id;
 async function createFollow(user_id, crypto_name) {
+try{
   let i = 0;
   while (i < crypto_name.length) {
 
@@ -31,6 +35,12 @@ async function createFollow(user_id, crypto_name) {
 
     i++;
   }
+}catch(error)
+  {
+    console.log(error)
+    return
+  }
+
 
 }
 
@@ -48,14 +58,16 @@ async function resetFollow(user_id) {
     result = await con.query(sql)
 
     console.log("1 follow inserted");
+  }catch(error)
+  {
+    console.log(error)
+    return
   }
-  catch (err) {
-    res.json("error on delete")
-    res.end
-  }
+
 }
 
 async function getUserByTelegram(telegram_id) {
+  try {
   var rta;
   var sql = "SELECT user_id FROM user WHERE  (telegram_id='" + telegram_id + "')";
 
@@ -66,6 +78,11 @@ async function getUserByTelegram(telegram_id) {
   console.log(rta + "rta")
 
   return rta;
+  }catch(error)
+  {
+    console.log(error)
+    return
+  }
 }
 
 
@@ -78,18 +95,19 @@ endpoints.post('/news/follow', async (req, res) => {
     const buff = req.body;
     //const id=buff.toString('utf-8')
     const id = buff;
-    console.log(id)
+
     crypto_name = id.following_cryptos;
     await PromiseConnection();
 
     console.log("Connected!");
     const user_id = await getUserByTelegram(id.telegram_id);
-    resetFollow(user_id);
-    createFollow(user_id, crypto_name);
+    await resetFollow(user_id);
+    await createFollow(user_id, crypto_name);
     res.json({ "message": "follows inserted" });
     res.end;
-  } catch
+  } catch(err)
   {
+    console.log(err)
     res.json({ "message": "follow error" });
     res.end;
   }
