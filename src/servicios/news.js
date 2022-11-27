@@ -2,7 +2,7 @@ const express = require('express')
 const endpoints = express.Router()
 const axios = require('axios')
 //database    
-
+const nodeCron = require("node-cron");
 var mysqlpro = require('mysql2/promise');
 //database    
 //connection variable 
@@ -16,15 +16,23 @@ async function PromiseConnection() {
   });
 
 }
+async function PromiseConnectionMYSQL() {
+  con = await mysqlpro.createConnection({
+    host: "34.134.60.163",
+    user: "news-instance",
+    password: "$*IE<6XiQH%OsJ75",
+    database: "news_db"
+  });
+
+}
 var result;
 //account variables
 var crypto_name;
 var user_id;
-
-async function createFollow(user_id, crypto_name,query_schedule) {
+async function createFollow(user_id, crypto_name, query_schedule) {
   let i = 0;
   while (i < crypto_name.length) {
-    var sql = "UPDATE user SET query_schedule ='"+query_schedule+"' WHERE user_id="+ user_id;
+    var sql = "UPDATE user SET query_schedule ='" + query_schedule + "' WHERE user_id=" + user_id;
     result = await con.query(sql)
     var sql = "INSERT INTO follow (user_id,crypto_name) VALUES ('" + user_id + "','" + crypto_name[i] + "');";
     result = await con.query(sql)
@@ -72,31 +80,28 @@ async function getUserByTelegram(telegram_id) {
 
 endpoints.post('/news/follow', async (req, res) => {
   console.log(req.body, "este es el body")
-  try {
-    await PromiseConnection();
 
+  try {
     //const buff = Buffer.from(req.body.message.data, 'base64');
     //const buff = Buffer.from(req.body.message.data, 'base64');
     const buff = req.body;
     //const id=buff.toString('utf-8')
     const id = buff;
-
+    console.log(id)
     crypto_name = id.following_cryptos;
-    telegram_id = id.telegramID;
     query_schedule = id.query_schedule;
+    await PromiseConnection();
+
     console.log("Connected!");
-
-    user_id = await getUserByTelegram(telegram_id)
-    await resetFollow(user_id);
-    await createFollow(user_id, crypto_name,query_schedule);
+    const user_id = await getUserByTelegram(id.telegram_id);
+    resetFollow(user_id);
+    createFollow(user_id, crypto_name, query_schedule);
     res.json({ "message": "follows inserted" });
-    res.end
-  }
-  catch (err) {
-    console.log(err)
-
-    res.end
-
+    res.end;
+  } catch
+  {
+    res.json({ "message": "follow error" });
+    res.end;
   }
 })
 
@@ -105,7 +110,7 @@ async function notify(user_id) {
   try {
     var user_id = user_id;
     var array_crypto = [];
-    let filter = [];
+    let filter = "";
     var sql;
 
     //conn.execute(async function(err) {
@@ -120,40 +125,27 @@ async function notify(user_id) {
     console.log(JSON.stringify(result) + "query check");
     for (crypto_rta of result) {
       await array_crypto.push(crypto_rta.crypto_name);
-      console.log(array_crypto + "check")
 
     }
 
 
     if (array_crypto && array_crypto.length > 0) {
-      for (let crypto of array_crypto) {
-        const newsurl = 'https://newsapi.org/v2/everything?q= crypto AND ' + crypto + '&language=es&sortBy=popularity&apiKey=3b67b1606d934062b206f3f9e56307fb'
-        const urlAPI = await axios.get(newsurl)
-        const datos = await urlAPI.data.articles
-        console.log(datos);
-        var notice
-        
+      crypto = Math.floor(Math.random() * (array_crypto.length - 0)) + 0;
+      const newsurl = 'https://newsapi.org/v2/everything?q= crypto AND ' + array_crypto[crypto] + '&language=es&sortBy=popularity&apiKey=3b67b1606d934062b206f3f9e56307fb'
+      console.log(newsurl)
+      const urlAPI = await axios.get(newsurl)
+      const datos = await urlAPI.data.articles
+      var notice
 
-        if (0 < datos.length) {
-          i = 0;
-         
-            notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
-            console.log(notice)
-            filter.push({
-              //"chat_id":chat,
-              "title": datos[notice].title,
-              "description": datos[notice].description,
-              "image": datos[notice].urlToImage,
-              "link": datos[notice].url
 
-            })
-            i++;
-          
-        };
+      if (0 < datos.length) {
+        notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
+        filter = await filter + " \n " + datos[notice].title + ":  \n " + datos[notice].url
+      };
 
-      }
+
     }
-  return filter
+    return filter
 
   } catch (error) {
     console.log(error)
@@ -163,20 +155,21 @@ async function notify(user_id) {
 async function usersQuery(sql) {
   console.log(sql + "outworks")
   var users_array = []
-  // await nodeCron.schedule(query_schedule, async () => {
-  console.log(sql + "works")
+
   result = await con.query(sql)
   if (result[0]) {
     for (users of result[0]) {
       var notification = await notify(users.user_id)
+      var message = "CRYPTO NEWS \ud83d\udcb8 \n" + notification 
       if (notification) {
-        message = {
-          user: users.telegram_id,
-          news: notification
+        message = await {
+          chat_id: users.telegram_id,
+          message
 
         }
         if (message) {
-          await users_array.push(message)
+         await  publishMessage(JSON.stringify(message))
+          await users_array.push(JSON.stringify(message))
         }
       }
 
@@ -184,28 +177,33 @@ async function usersQuery(sql) {
   }
 
 
-  console.log(users_array)
+  console.log(users_array+"check")
 
   // })
   return users_array
 }
 
 async function schedule() {
-  var users_array = []
-  array_query = ["*/30 * * * *", "* */1 * * *", "* */2 * * *"]
-  for (query_schedule of array_query) {
-    try {
-      sql = "SELECT user_id, telegram_id FROM user WHERE query_schedule='" + query_schedule + "';"
-      var array = await usersQuery(sql)
-      if (array && array !== null && array !== "null" && array.length > 0) {
-        await users_array.push(array[0])
+  try {
+    var users_array = []
+      try {
+          sql = "SELECT user_id, telegram_id FROM user ;"
+          var array = await usersQuery(sql)  
+          if (array && array !== null && array !== "null" && array.length > 0) {
+            await users_array.push(array)
+  
+          }
+
       }
-    }
-    catch (error) { console.log(error) }
+
+      catch (error) { console.log(error) }
+    
+
+    return await users_array;
   }
-
-
-  return await users_array;
+  catch (err) {
+    console.log(err)
+  }
 }
 
 endpoints.get('/news/notification', async (req, res) => {
@@ -249,6 +247,7 @@ endpoints.get('/news/consult', async (req, res) => {
       while (i < 10) {
         notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
         console.log(notice)
+
         filter.push({
           //"chat_id":chat,
           "title": datos[notice].title,
