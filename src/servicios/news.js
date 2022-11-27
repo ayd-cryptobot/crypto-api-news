@@ -9,31 +9,22 @@ var mysqlpro = require('mysql2/promise');
 var con
 async function PromiseConnection() {
   con = await mysqlpro.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "root",
-    database: "news"
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_DATABASE
   });
 
 }
-async function PromiseConnectionMYSQL() {
-  con = await mysqlpro.createConnection({
-    host: "34.134.60.163",
-    user: "news-instance",
-    password: "$*IE<6XiQH%OsJ75",
-    database: "news_db"
-  });
 
-}
 var result;
 //account variables
 var crypto_name;
 var user_id;
-async function createFollow(user_id, crypto_name, query_schedule) {
+async function createFollow(user_id, crypto_name) {
   let i = 0;
   while (i < crypto_name.length) {
-    var sql = "UPDATE user SET query_schedule ='" + query_schedule + "' WHERE user_id=" + user_id;
-    result = await con.query(sql)
+
     var sql = "INSERT INTO follow (user_id,crypto_name) VALUES ('" + user_id + "','" + crypto_name[i] + "');";
     result = await con.query(sql)
     console.log("1 follow inserted");
@@ -89,13 +80,12 @@ endpoints.post('/news/follow', async (req, res) => {
     const id = buff;
     console.log(id)
     crypto_name = id.following_cryptos;
-    query_schedule = id.query_schedule;
     await PromiseConnection();
 
     console.log("Connected!");
     const user_id = await getUserByTelegram(id.telegram_id);
     resetFollow(user_id);
-    createFollow(user_id, crypto_name, query_schedule);
+    createFollow(user_id, crypto_name);
     res.json({ "message": "follows inserted" });
     res.end;
   } catch
