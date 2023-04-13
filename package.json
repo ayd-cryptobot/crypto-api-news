@@ -4,8 +4,8 @@
   "description": "mediaStack docker",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npx nodemon src/app.js"
+    "test": "npx nodemon src/app.js",
+    "start": "node src/app.js"
   },
   "author": "Martin de Jesus Medina Ruvian",
   "license": "ISC",
