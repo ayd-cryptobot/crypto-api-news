@@ -176,7 +176,7 @@ async function usersQuery(sql) {
 
         }
         if (message) {
-         await  publishMessage(JSON.stringify(message))
+         await  publishNotify(JSON.stringify(message))
           await users_array.push(JSON.stringify(message))
         }
       }
@@ -379,4 +379,21 @@ async function publishMessage(messaging) {
   }
 }
 
+async function publishNotify(messaging) {
+  try {
+    // converts buffer from messaging
+    const dataBuffer = Buffer.from(messaging);
+
+
+    const messageId = await pubSubClient
+      //topic data
+      .topic("projects/cryptobot-345516/topics/news-events-topic")
+      .publishMessage({ data: dataBuffer });
+
+    console.log(`Message ${messageId} published.`);
+  } catch (error) {
+    console.error(`Received error while publishing: ${error.message}`);
+    process.exitCode = 1;
+  }
+}
 module.exports = endpoints
