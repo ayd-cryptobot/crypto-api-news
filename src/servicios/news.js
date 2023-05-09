@@ -4,12 +4,12 @@ const endpoints = express.Router()
 const axios = require('axios')
 //database    
 const nodeCron = require("node-cron");
-var mysqlpro = require('mysql2/promise');
+let mysqlpro = require('mysql2/promise');
 const dotenv = require('dotenv')
 dotenv.config({path: '.env'})
 //database    
 //connection variable 
-var con
+let con
 async function PromiseConnection() {
   con = await mysqlpro.createConnection({
     host: process.env.DB_HOST,
@@ -20,16 +20,15 @@ async function PromiseConnection() {
 
 }
 
-var result;
+let result;
 //account variables
-var crypto_name;
-var user_id;
+let crypto_name;
 async function createFollow(user_id, crypto_name) {
 try{
   let i = 0;
   while (i < crypto_name.length) {
 
-    var sql = "INSERT INTO follow (user_id,crypto_name) VALUES ('" + user_id + "','" + crypto_name[i] + "');";
+    let sql = "INSERT INTO follow (user_id,crypto_name) VALUES ('" + user_id + "','" + crypto_name[i] + "');";
     result = await con.query(sql)
     console.log("1 follow inserted");
 
@@ -46,7 +45,7 @@ try{
 
 async function resetFollow(user_id) {
   try {
-    var sql = "SELECT id_string FROM follow WHERE  (user_id='" + user_id + "')";
+    let sql = "SELECT id_string FROM follow WHERE  (user_id='" + user_id + "')";
     result = await con.query(sql)
   }
   catch (err) {
@@ -54,7 +53,7 @@ async function resetFollow(user_id) {
     return
   }
   try {
-    var sql = "DELETE FROM follow WHERE(user_id='" + user_id + "');";
+    let sql = "DELETE FROM follow WHERE(user_id='" + user_id + "');";
     result = await con.query(sql)
 
     console.log("1 follow inserted");
@@ -68,8 +67,8 @@ async function resetFollow(user_id) {
 
 async function getUserByTelegram(telegram_id) {
   try {
-  var rta;
-  var sql = "SELECT user_id FROM user WHERE  (telegram_id='" + telegram_id + "')";
+  let rta;
+  let sql = "SELECT user_id FROM user WHERE  (telegram_id='" + telegram_id + "')";
 
   result = await con.query(sql)
 
@@ -104,26 +103,22 @@ endpoints.post('/news/follow', async (req, res) => {
     await resetFollow(user_id);
     await createFollow(user_id, crypto_name);
     res.json({ "message": "follows inserted" });
-    res.end;
+    res.end();
   } catch(err)
   {
     console.log(err)
     res.json({ "message": "follow error" });
-    res.end;
+    res.end();
   }
 })
 
 
 async function notify(user_id) {
   try {
-    var user_id = user_id;
-    var array_crypto = [];
+    let user_id = user_id;
+    let array_crypto = [];
     let filter = "";
-    var sql;
-
-    //conn.execute(async function(err) {
-
-    //  if (err) throw err;
+    let sql;
 
     console.log("Connected!");
 
@@ -131,8 +126,8 @@ async function notify(user_id) {
     const [rows] = await con.query(sql)
     result = rows
     console.log(JSON.stringify(result) + "query check");
-    for (crypto_rta of result) {
-      await array_crypto.push(crypto_rta.crypto_name);
+    for (let crypto_rta of result) {
+      array_crypto.push(crypto_rta.crypto_name);
 
     }
 
@@ -143,12 +138,12 @@ async function notify(user_id) {
       console.log(newsurl)
       const urlAPI = await axios.get(newsurl)
       const datos = await urlAPI.data.articles
-      var notice
+      let notice
 
 
       if (0 < datos.length) {
         notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
-        filter = await filter + " \n " + datos[notice].title + ":  \n " + datos[notice].url
+        filter = filter + " \n " + datos[notice].title + ":  \n " + datos[notice].url
       };
 
 
@@ -162,22 +157,21 @@ async function notify(user_id) {
 }
 async function usersQuery(sql) {
   console.log(sql + "outworks")
-  var users_array = []
+  let users_array = []
 
   result = await con.query(sql)
   if (result[0]) {
-    for (users of result[0]) {
-      var notification = await notify(users.user_id)
-      var message = "CRYPTO NEWS \ud83d\udcb8 \n" + notification 
+    for (let users of result[0]) {
+      let notification = await notify(users.user_id)
+      let message = "CRYPTO NEWS \ud83d\udcb8 \n" + notification 
       if (notification) {
-        message = await {
+        message = {
           chat_id: users.telegram_id,
           message
-
         }
         if (message) {
          await  publishNotify(JSON.stringify(message))
-          await users_array.push(JSON.stringify(message))
+           users_array.push(JSON.stringify(message))
         }
       }
 
@@ -193,12 +187,12 @@ async function usersQuery(sql) {
 
 async function schedule() {
   try {
-    var users_array = []
+    let users_array = []
       try {
-          sql = "SELECT user_id, telegram_id FROM user ;"
-          var array = await usersQuery(sql)  
-          if (array && array !== null && array !== "null" && array.length > 0) {
-            await users_array.push(array)
+          let sql = "SELECT user_id, telegram_id FROM user ;"
+          let array = await usersQuery(sql)  
+          if (array && array != null && array != "null" && array.length > 0) {
+             users_array.push(array)
   
           }
 
@@ -207,7 +201,7 @@ async function schedule() {
       catch (error) { console.log(error) }
     
 
-    return await users_array;
+    return  users_array;
   }
   catch (err) {
     console.log(err)
@@ -219,12 +213,12 @@ endpoints.get('/news/notification', async (req, res) => {
   try {
 
     res.json(await schedule())
-    res.end
+    res.end()
   }
   catch (err) {
     console.log(err)
     res.json("internal fuction error")
-    res.end
+    res.end()
   }
 
 })
@@ -233,27 +227,21 @@ endpoints.get('/news/notification', async (req, res) => {
 //LISTAR NOTICIAS PARA LA PAGINA WEB
 endpoints.get('/news/consult', async (req, res) => {
   try {
-
-    // const buff = Buffer.from(req.body.message.data, 'base64');
-
-    // const id=buff.toString('utf-8')
-    // const chat= JSON.parse(id).chat_id
-    await PromiseConnection();
-
-    console.log("Connected!");
-
     const urlAPI = 'https://newsapi.org/v2/everything?q=crypto&language=es&sortBy=popularity&apiKey=3b67b1606d934062b206f3f9e56307fb';
     console.log(urlAPI);
     const respuestaAPI = await axios.get(urlAPI)
-    const datos = await respuestaAPI.data.articles
+    let datos = await respuestaAPI.data.articles
 
-    var notice
+    let notice
     let filter = [];
 
     if (0 < datos.length) {
-      i = 0;
+      let i = 0;
       while (i < 10) {
         notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
+        if (notice > -1 && notice < datos.length) {
+        datos.splice(notice, 1);
+        }
         console.log(notice)
 
         filter.push({
@@ -271,18 +259,17 @@ endpoints.get('/news/consult', async (req, res) => {
     console.log(filter)
     if (datos && datos.length > 0) {
       res.json({ "message": filter })
-      // filter =JSON.stringify(filter);
-      // publishMessage(filter);
+
     }
     else
       res.json({ "mensaje": "no hay datos" })
 
-    res.end
+    res.end()
   }
   catch (err) {
     console.log(err)
     res.json("error")
-    res.end
+    res.end()
   }
 })
 
@@ -293,30 +280,22 @@ endpoints.post('/news/accounts/event', async (req, res) => {
     const id = JSON.parse(buff.toString('utf-8'))
     console.log(id, "este es el body")
     await PromiseConnection();
-
-    //const buff = Buffer.from(req.body.message.data, 'base64');
-    //const buff = Buffer.from(req.body.message.data, 'base64');
-
-    //const id=buff.toString('utf-8')
-
+    
     try {
-      var operation_type = id.operation_type
+      let operation_type = id.operation_type
       console.log(operation_type);
     }
     catch (err) {
       res.json("invalid operation")
-      res.end
+      res.end()
     }
     console.log("Connected!");
-    var telegram_user_id = id.telegram_user_id
+    let telegram_user_id = id.telegram_user_id
+    
     switch (operation_type) {
 
       case ("create"):
-        // var first_name=id.first_name
-        // var last_name=id.last_name
-        // var email=id.email
-        // var username=id.username
-        //     var sql = "INSERT INTO user (telegram_id,first_name, last_name,email  username,  rol) VALUES ('"+telegram_user_id+"','"+first_name+"','"+ last_name+"','"+ email+"','"+ username+"','cliente');";
+        
         var sql = "INSERT INTO user (telegram_id) VALUES ('" + telegram_user_id + "');";
         result = await con.query(sql)
         await res.json({ "message": "account created" });
@@ -342,28 +321,26 @@ endpoints.post('/news/accounts/event', async (req, res) => {
         break;
     }
 
-    res.end
+    res.end()
   }
   catch (err) {
     console.log(err)
     await res.json("error")
 
-    res.end
+    res.end()
   }
 })
 //gcloud auth application-default login   
 /**
  * TODO(developer): Uncomment these variables before running the sample.
  */
-// const topicNameOrId = 'YOUR_TOPIC_NAME_OR_ID';
-// const data = JSON.stringify({foo: 'bar'});
 
 // Imports the Google Cloud client library
 const { PubSub } = require('@google-cloud/pubsub');
 
 // Creates a client; cache this for further use
 const pubSubClient = new PubSub();
-GOOGLE_APPLICATION_CREDENTIALS = '.\cryptobot-345516'
+ GOOGLE_APPLICATION_CREDENTIALS = '.\cryptobot-345516'
 async function publishMessage(messaging) {
   // Publishes the message as a string, e.g. "Hello, world!" or JSON.stringify(someObject)
   const dataBuffer = Buffer.from(messaging);

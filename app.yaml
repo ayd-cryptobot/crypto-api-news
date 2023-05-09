@@ -23,7 +23,7 @@ env_variables:
   # Agrega aquí las variables de entorno que necesite tu aplicación
   # En este ejemplo, se establece el puerto del servidor en 8080
   PORT: 8080
-  DB_HOST : 34.73.135.156
+  DB_HOST : 34.148.245.1
   DB_USER : root
-  DB_PASS :  8I?m_Us#veUIO~hQ
+  DB_PASS :  vP--<aO32dfdNn*P
   DB_DATABASE : news
