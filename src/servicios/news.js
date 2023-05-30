@@ -113,9 +113,10 @@ endpoints.post('/news/follow', async (req, res) => {
 })
 
 
+
 async function notify(user_id) {
   try {
-    let user_id = user_id;
+    var user_id = user_id;
     let array_crypto = [];
     let filter = "";
     let sql;
@@ -144,6 +145,7 @@ async function notify(user_id) {
       if (0 < datos.length) {
         notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
         filter = filter + " \n " + datos[notice].title + ":  \n " + datos[notice].url
+
       };
 
 
@@ -209,9 +211,9 @@ async function schedule() {
 }
 
 endpoints.get('/news/notification', async (req, res) => {
-  await PromiseConnection();
+  
   try {
-
+    await PromiseConnection();
     res.json(await schedule())
     res.end()
   }
@@ -240,7 +242,7 @@ endpoints.get('/news/consult', async (req, res) => {
       while (i < 10) {
         notice = Math.floor(Math.random() * (datos.length - 0)) + 0;
         if (notice > -1 && notice < datos.length) {
-        datos.splice(notice, 1);
+        datos=datos.splice(notice, 1);
         }
         console.log(notice)
 
@@ -275,14 +277,16 @@ endpoints.get('/news/consult', async (req, res) => {
 
 endpoints.post('/news/accounts/event', async (req, res) => {
   try {
-
+    //codificates message values
     const buff = Buffer.from(req.body.message.data, 'base64');
     const id = JSON.parse(buff.toString('utf-8'))
     console.log(id, "este es el body")
     await PromiseConnection();
-    
+    let sql
+
     try {
-      let operation_type = id.operation_type
+      //gets operation for switch cases
+      var operation_type = id.operation_type
       console.log(operation_type);
     }
     catch (err) {
@@ -291,30 +295,29 @@ endpoints.post('/news/accounts/event', async (req, res) => {
     }
     console.log("Connected!");
     let telegram_user_id = id.telegram_user_id
-    
+    //looks the operation asked for the user in the operation type string
     switch (operation_type) {
-
+      //creates account using only the telegram id  and responds with success message
       case ("create"):
-        
-        var sql = "INSERT INTO user (telegram_id) VALUES ('" + telegram_user_id + "');";
+         sql = "INSERT INTO user (telegram_id) VALUES ('" + telegram_user_id + "');";
         result = await con.query(sql)
         await res.json({ "message": "account created" });
 
         break;
-
+      //MESSAGEDEV3 CHECK IF THERE IS STILL NECESITY FOR THIS
       case ("update"):
 
 
         await res.json({ "message": "ok" });
         break;
-
+      //deletes account using only the telegram id  and responds with success message
       case ("delete"):
-        var sql = "DELETE FROM user WHERE (telegram_id='" + telegram_user_id + "');";
+         sql = "DELETE FROM user WHERE (telegram_id='" + telegram_user_id + "');";
         result = await con.query(sql)
         await res.json({ "message": "account deleted" });
 
         break;
-
+      //if the event string doesnt match an operation returns error
       default:
         await res.json({ "error": "event not found" });
 
@@ -327,10 +330,10 @@ endpoints.post('/news/accounts/event', async (req, res) => {
     console.log(err)
     await res.json("error")
 
+
     res.end()
   }
 })
-//gcloud auth application-default login   
 /**
  * TODO(developer): Uncomment these variables before running the sample.
  */
